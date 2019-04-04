@@ -115,9 +115,9 @@
         "autoUpgradeMinorVersion":true,
         "settings": {
             "fileUris": [
-                "https://raw.githubusercontent.com/kieronjp1976/playdeploy/master/installiis.ps1"
+                "https://raw.githubusercontent.com/kieronjp1976/Exchange2010Azure/master/installAD.ps1"
             ],
-            "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File installiis.ps1"
+            "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File installAD.ps1"
         }
     }
 },

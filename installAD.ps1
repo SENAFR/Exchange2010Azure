@@ -36,10 +36,10 @@ Configuration InstallAD {
         {  
             Name = ‘AfterSoftwareInstall’ 
         }
-        Computer NewName
-        {
-            Name = 'DC01'
-        } 
+        #Computer NewName
+        #{
+        #    Name = 'DC01'
+       # } 
 
         WindowsFeature DNS 
         { 

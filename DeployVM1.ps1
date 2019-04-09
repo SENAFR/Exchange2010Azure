@@ -10,7 +10,7 @@ Connect-AzAccount -Credential $creds
 
 #Create Resource Group
 $location = "UK South"
-$RGName = "DeployTest1"
+$RGName = "Exchange2010Lab"
 
 
 Enable-AzureRmAlias

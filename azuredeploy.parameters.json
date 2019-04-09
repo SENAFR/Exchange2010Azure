@@ -2,8 +2,9 @@
   "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-  "adminUsername": { "value": "azureuser" },
+    "adminUsername": { "value": "azureuser" },
     "adminPassword": { "value": "Azure12345678" },
-	"dnsLabelPrefix": { "value": "kptestlabtut" }
+    "dnsLabelPrefix": { "value": "kptestlabtut0" },
+    "dnsLabelPrefix2": { "value": "kptestlabtut2" }
   }
 }

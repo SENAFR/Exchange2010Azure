@@ -20,6 +20,12 @@
         "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
       }
     },
+    "dnsLabelPrefix2": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique DNS Name for the Public IP used to access the Virtual Machine."
+      }
+    },
     "windowsOSVersion": {
       "type": "string",
       "defaultValue": "2016-Datacenter",
@@ -51,10 +57,11 @@
     "addressPrefix": "10.0.0.0/16",
     "subnetName": "Subnet",
     "subnetPrefix": "10.0.0.0/24",
-    "publicIPAddressName": "myPublicIP",
+    "publicIPAddressName": "kpPublicIP",
+    "publicIPAddressName2": "kpPublicIP2",
     "vmName": "DC01",
     "vmName2": "EX01",
-    "virtualNetworkName": "MyVNET",
+    "virtualNetworkName": "Exchange2010LabvNet",
     "subnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('virtualNetworkName'), variables('subnetName'))]"
   },
   "resources": [
@@ -82,6 +89,18 @@
       }
     },
     {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName2')]",
+      "location": "[parameters('location')]",
+      "apiVersion": "2018-10-01",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('dnsLabelPrefix2')]"
+        }
+      }
+    },
+    {
       "type": "Microsoft.Network/virtualNetworks",
       "name": "[variables('virtualNetworkName')]",
       "location": "[parameters('location')]",
@@ -103,26 +122,26 @@
       }
     },
     {
-    "apiVersion": "2018-06-01",
-    "type": "Microsoft.Compute/virtualMachines/extensions",
-    "name": "[concat(variables('vmName'),'/', 'InstallWebServer')]",
-    "location": "[parameters('location')]",
-    "dependsOn": [
+      "apiVersion": "2018-06-01",
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmName'),'/', 'InstallWebServer')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
         "[concat('Microsoft.Compute/virtualMachines/',variables('vmName'))]"
-    ],
-    "properties": {
+      ],
+      "properties": {
         "publisher": "Microsoft.Compute",
         "type": "CustomScriptExtension",
         "typeHandlerVersion": "1.7",
-        "autoUpgradeMinorVersion":true,
+        "autoUpgradeMinorVersion": true,
         "settings": {
-            "fileUris": [
-                "https://raw.githubusercontent.com/kieronjp1976/Exchange2010Azure/master/installAD.ps1"
-            ],
-            "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File installAD.ps1"
+          "fileUris": [
+            "https://raw.githubusercontent.com/kieronjp1976/Exchange2010Azure/master/installAD.ps1"
+          ],
+          "commandToExecute": "powershell.exe -ExecutionPolicy Unrestricted -File installAD.ps1"
         }
-    }
-},
+      }
+    },
     {
       "type": "Microsoft.Network/networkInterfaces",
       "name": "[variables('nicName')]",
@@ -140,6 +159,32 @@
               "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": {
                 "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('nicName2')]",
+      "location": "[parameters('location')]",
+      "apiVersion": "2018-10-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName2'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig2",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName2'))]"
               },
               "subnet": {
                 "id": "[variables('subnetRef')]"
@@ -185,58 +230,71 @@
             }
           ]
         },
-        {
-          "type": "Microsoft.Compute/virtualMachines",
-          "name": "[variables('vmName2')]",
-          "location": "[parameters('location')]",
-          "apiVersion": "2018-10-01",
-          "dependsOn": [
-            "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
-            "[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName2'))]"
-          ],
-          "properties": {
-            "hardwareProfile": {
-              "vmSize": "Standard_A2"
-            },
-            "osProfile": {
-              "computerName": "[variables('vmName')]",
-              "adminUsername": "[parameters('adminUsername')]",
-              "adminPassword": "[parameters('adminPassword')]"
-            },
-            "storageProfile": {
-              "imageReference": {
-                "publisher": "MicrosoftWindowsServer",
-                "offer": "WindowsServer",
-                "sku": "[parameters('windowsOSVersion')]",
-                "version": "latest"
-              },
-              "osDisk": {
-                "createOption": "FromImage"
-              },
-              "dataDisks": [
-                {
-                  "diskSizeGB": 1023,
-                  "lun": 0,
-                  "createOption": "Empty"
-                }
-              ]
-            },
-            "networkProfile": {
-              "networkInterfaces": [
-                {
-                  "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
-                }
-              ]
-            },
-            "diagnosticsProfile": {
-              "bootDiagnostics": {
-                "enabled": true,
-                "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))).primaryEndpoints.blob]"
-              }
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName'))]"
             }
+          ]
+        }
+      }
+    },
 
-          }
+    {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('vmName2')]",
+      "location": "[parameters('location')]",
+      "apiVersion": "2018-10-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces/', variables('nicName2'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_A2"
         },
+        "osProfile": {
+          "computerName": "[variables('vmName2')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "[parameters('windowsOSVersion')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "diskSizeGB": 1023,
+              "lun": 0,
+              "createOption": "Empty"
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('nicName2'))]"
+            }
+          ]
+        },
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "[reference(resourceId('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))).primaryEndpoints.blob]"
+          }
+        }
+
+      }
+    }
+
+
+  ],
 
         "outputs": {
           "hostname": {
@@ -245,5 +303,6 @@
           }
         }
       }
+      
 
 
